@@ -1,0 +1,48 @@
+name: Build Cargo Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Type of build (debug or release)'
+        required: true
+        default: 'release'
+      target:
+        description: 'Optional compilation target'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: |
+          if [ "${{ inputs.build_type }}" == "release" ]; then
+            cargo build --release $([ "${{ inputs.target }}" ] && echo --target=${{ inputs.target }})
+          else
+            cargo build $([ "${{ inputs.target }}" ] && echo --target=${{ inputs.target }})
+          fi
+
+      - name: Run tests (optional, only for debug builds)
+        if: inputs.build_type == 'debug'
+        run: |
+          cargo test
+
+      - name: Artifact information
+        run: |
+          if [ "${{ inputs.build_type }}" == "release" ]; then
+            echo "Build completed for release mode."
+          else
+            echo "Build completed for debug mode."
+          fi
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: createxcrunch
+          path: |
+            ${{ github.workspace }}/target/release/createxcrunch
